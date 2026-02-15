@@ -1,0 +1,20 @@
+#!/bin/bash
+# els - elsummariz00r CLI
+# Runs on demand, no server needed.
+
+ELS_DIR="$HOME/Documents/elsummariz00r"
+
+case "$1" in
+  -h|--help)
+    echo "Usage: els [-d] [-r] [url]"
+    echo ""
+    echo "  els <url>       Summarize a URL (skips if already cached)"
+    echo "  els             Summarize active qutebrowser tab"
+    echo "  els -r <url>    Force re-summarize, ignore cache"
+    echo "  els -d <url>    Summarize + open Claude Code discussion"
+    echo "  els -d          Active tab + discussion"
+    exit 0
+    ;;
+esac
+
+CLAUDECODE= exec bun run "$ELS_DIR/src/index.ts" "$@"

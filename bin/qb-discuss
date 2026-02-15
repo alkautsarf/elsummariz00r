@@ -1,0 +1,16 @@
+#!/bin/bash
+# qutebrowser userscript: :discuss
+# Opens a Claude Code discussion for the current page's summary.
+# Falls back to most recent summary if current page hasn't been summarized.
+# Runs on demand, no server needed.
+
+export PATH="$HOME/.bun/bin:$PATH"
+ELS_DIR="$HOME/Documents/elsummariz00r"
+
+CLAUDECODE= bun run "$ELS_DIR/src/index.ts" --discuss-url="$QUTE_URL" 2>/tmp/els-discuss.log
+
+if [ $? -eq 0 ]; then
+  echo "message-info 'elsummariz00r: discussion opened in tmux'" >> "$QUTE_FIFO"
+else
+  echo "message-error 'elsummariz00r: no summary found for this page'" >> "$QUTE_FIFO"
+fi

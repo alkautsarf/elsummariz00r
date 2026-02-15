@@ -1,0 +1,12 @@
+{
+  "name": "elsummariz00r",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "summarize": "bun run src/index.ts",
+    "setup": "bash scripts/setup.sh"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.38"
+  }
+}
