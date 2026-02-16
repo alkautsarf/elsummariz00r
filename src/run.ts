@@ -149,15 +149,17 @@ export async function runSummarize(opts: {
   return { slug, title, summary, htmlPath };
 }
 
-export async function runDiscuss(slug?: string, url?: string): Promise<void> {
+export async function runDiscuss(slug?: string, url?: string, forceNew?: boolean): Promise<void> {
   let target = slug;
   if (!target && url) {
-    target = await findByUrl(url) || undefined;
+    // Resolve file:// summary URLs back to original source
+    const sourceUrl = await resolveSourceUrl(url);
+    target = await findByUrl(sourceUrl || url) || undefined;
     if (!target) throw new Error("This page hasn't been summarized yet");
   }
   if (!target) {
     target = await getLatestSlug() || undefined;
   }
   if (!target) throw new Error("No summaries yet");
-  await openDiscussion(target);
+  await openDiscussion(target, forceNew);
 }

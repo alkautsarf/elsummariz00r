@@ -52,13 +52,20 @@ function esc(s: string): string {
 }
 
 function inline(s: string): string {
-  return s
+  // Escape HTML first to prevent XSS, then apply markdown transformations
+  return esc(s)
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
     .replace(/`(.+?)`/g, "<code>$1</code>")
     .replace(
       /\[([^\]]+)\]\(([^)]+)\)/g,
-      '<a href="$2" target="_blank">$1</a>',
+      (_, text, url) => {
+        // Only allow http(s) links
+        if (/^https?:\/\//i.test(url)) {
+          return `<a href="${url}" target="_blank">${text}</a>`;
+        }
+        return `${text} (${url})`;
+      },
     )
     .replace(/\n/g, "<br>");
 }

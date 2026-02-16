@@ -11,7 +11,7 @@ const HTML_DIR = join(HOME, "html");
 function normalizeUrl(url: string): string {
   // YouTube: normalize to just the video ID
   const ytMatch = url.match(
-    /(?:youtube\.com\/watch\?.*v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+    /(?:youtube\.com\/(?:watch\?.*v=|shorts\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
   );
   if (ytMatch) return `yt:${ytMatch[1]}`;
 
@@ -145,6 +145,7 @@ export async function resolveSourceUrl(url: string): Promise<string | null> {
   if (!url.startsWith(htmlPrefix)) return null;
 
   const slug = url.slice(htmlPrefix.length).replace(".html", "");
+  if (slug.includes("/") || slug.includes("\\")) return null;
   try {
     const text = await readFile(join(ARTICLES_DIR, `${slug}.md`), "utf-8");
     const urlMatch = text.match(/^url:\s*(.+)$/m);

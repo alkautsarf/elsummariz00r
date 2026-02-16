@@ -1,7 +1,7 @@
 #!/bin/bash
 # qutebrowser userscript: :discuss
-# Opens a Claude Code discussion for the current page's summary.
-# Falls back to most recent summary if current page hasn't been summarized.
+# Opens or resumes a Claude Code discussion for the current page's summary.
+# Resumes previous session if one exists, otherwise starts new.
 # Runs on demand, no server needed.
 
 export PATH="$HOME/.bun/bin:$PATH"
@@ -9,8 +9,17 @@ ELS_DIR="$HOME/Documents/elsummariz00r"
 
 CLAUDECODE= bun run "$ELS_DIR/src/index.ts" --discuss-url="$QUTE_URL" 2>/tmp/els-discuss.log
 
-if [ $? -eq 0 ]; then
-  echo "message-info 'elsummariz00r: discussion opened in tmux'" >> "$QUTE_FIFO"
+EXIT_CODE=$?
+LOG=$(cat /tmp/els-discuss.log 2>/dev/null)
+
+if [ $EXIT_CODE -eq 0 ]; then
+  if echo "$LOG" | grep -q "Resuming"; then
+    echo "message-info 'elsummariz00r: resumed discussion in tmux'" >> "$QUTE_FIFO"
+  else
+    echo "message-info 'elsummariz00r: discussion opened in tmux'" >> "$QUTE_FIFO"
+  fi
+elif echo "$LOG" | grep -q "already open"; then
+  echo "message-warning 'elsummariz00r: discussion already open in tmux'" >> "$QUTE_FIFO"
 else
   echo "message-error 'elsummariz00r: no summary found for this page'" >> "$QUTE_FIFO"
 fi

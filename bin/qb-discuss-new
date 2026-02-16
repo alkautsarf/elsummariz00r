@@ -1,0 +1,20 @@
+#!/bin/bash
+# qutebrowser userscript: :discuss-new
+# Starts a fresh Claude Code discussion (ignores previous sessions).
+# Runs on demand, no server needed.
+
+export PATH="$HOME/.bun/bin:$PATH"
+ELS_DIR="$HOME/Documents/elsummariz00r"
+
+CLAUDECODE= bun run "$ELS_DIR/src/index.ts" --discuss-url="$QUTE_URL" --new 2>/tmp/els-discuss.log
+
+EXIT_CODE=$?
+LOG=$(cat /tmp/els-discuss.log 2>/dev/null)
+
+if [ $EXIT_CODE -eq 0 ]; then
+  echo "message-info 'elsummariz00r: new discussion opened in tmux'" >> "$QUTE_FIFO"
+elif echo "$LOG" | grep -q "already open"; then
+  echo "message-warning 'elsummariz00r: discussion already open in tmux'" >> "$QUTE_FIFO"
+else
+  echo "message-error 'elsummariz00r: no summary found for this page'" >> "$QUTE_FIFO"
+fi

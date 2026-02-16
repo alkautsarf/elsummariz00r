@@ -29,6 +29,7 @@ const args = process.argv.slice(2);
 let discuss = false;
 let json = false;
 let redo = false;
+let forceNew = false;
 let url: string | undefined;
 let title: string | undefined;
 
@@ -36,11 +37,13 @@ for (const arg of args) {
   if (arg === "--discuss" || arg === "-d") discuss = true;
   else if (arg === "--json") json = true;
   else if (arg === "--redo" || arg === "-r") redo = true;
+  else if (arg === "--new" || arg === "-n") forceNew = true;
   else if (arg === "--discuss-latest") {
     await runDiscuss();
     process.exit(0);
   } else if (arg.startsWith("--discuss-url=")) {
-    await runDiscuss(undefined, arg.slice(14));
+    const newFlag = args.includes("--new") || args.includes("-n");
+    await runDiscuss(undefined, arg.slice(14), newFlag);
     process.exit(0);
   } else if (arg.startsWith("--title=")) title = arg.slice(8);
   else if (!arg.startsWith("-")) url = arg;
@@ -149,7 +152,7 @@ try {
 
   if (discuss) {
     console.error("  Opening discussion session...");
-    await runDiscuss(result.slug);
+    await runDiscuss(result.slug, undefined, forceNew);
   }
 
   process.exit(0);

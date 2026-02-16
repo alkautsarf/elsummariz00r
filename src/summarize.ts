@@ -3,7 +3,7 @@ import { query } from "@anthropic-ai/claude-agent-sdk";
 const TIMEOUT_MS = 120_000;
 const DEFAULT_MODEL = "claude-opus-4-6";
 
-export function getModel(): string {
+function getModel(): string {
   return process.env.ELS_MODEL || DEFAULT_MODEL;
 }
 
@@ -89,12 +89,17 @@ ${content}`;
     throw new Error("Claude SDK returned no result");
   };
 
+  let timer: Timer;
   const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(
+    timer = setTimeout(
       () => reject(new Error(`Summarization timed out after ${TIMEOUT_MS}ms`)),
       TIMEOUT_MS,
     );
   });
 
-  return Promise.race([sdkCall(), timeoutPromise]);
+  try {
+    return await Promise.race([sdkCall(), timeoutPromise]);
+  } finally {
+    clearTimeout(timer!);
+  }
 }

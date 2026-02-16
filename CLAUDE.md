@@ -14,9 +14,11 @@ On-demand CLI tool — no persistent server. Each invocation runs `bun run src/i
 
 ## Entry Points
 
-- `bin/els` — CLI: `els <url>`, `els -d <url>`, `els` (active tab)
+- `bin/els` — CLI: `els <url>`, `els -d <url>`, `els -d -n <url>`, `els` (active tab)
 - `bin/qb-summarize` — qutebrowser userscript (`:summarize`), outputs JSON, opens HTML in new tab
-- `bin/qb-discuss` — qutebrowser userscript (`:discuss`), opens Claude Code in tmux
+- `bin/qb-resummarize` — qutebrowser userscript (`:resummarize`), force re-summarize
+- `bin/qb-discuss` — qutebrowser userscript (`:discuss`), resumes or opens Claude Code in tmux
+- `bin/qb-discuss-new` — qutebrowser userscript (`:discuss-new`), forces new discussion session
 
 All entry points call `bun run src/index.ts` directly. Shell scripts set `CLAUDECODE=` to avoid nested session detection.
 
@@ -28,7 +30,7 @@ All entry points call `bun run src/index.ts` directly. Shell scripts set `CLAUDE
 - `src/youtube.ts` — YouTube caption extraction via ANDROID innertube
 - `src/summarize.ts` — Claude Agent SDK wrapper
 - `src/storage.ts` — File I/O for ~/.elsummariz00r/
-- `src/html.ts` — HTML summary page template (Night Owl theme)
+- `src/html.ts` — HTML summary page template (Tokyo Night theme, dark/light toggle)
 - `src/tmux.ts` — Opens Claude Code discussion sessions in tmux
 
 ## Dev

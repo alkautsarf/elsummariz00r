@@ -9,12 +9,12 @@ export interface CaptionResult {
 }
 
 export function isYouTube(url: string): boolean {
-  return /youtube\.com\/watch|youtu\.be\//.test(url);
+  return /youtube\.com\/(watch|shorts|live)|youtu\.be\//.test(url);
 }
 
 export function extractVideoId(url: string): string | null {
   const match = url.match(
-    /(?:youtube\.com\/watch\?.*v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+    /(?:youtube\.com\/(?:watch\?.*v=|shorts\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
   );
   return match?.[1] ?? null;
 }
