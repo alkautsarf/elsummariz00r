@@ -27,8 +27,8 @@ function normalizeUrl(url: string): string {
   }
 }
 
-/** Find an existing summary by URL. Returns slug if found. */
-export async function findByUrl(url: string): Promise<string | null> {
+/** Find an existing summary by URL. Optionally filter by type. Returns slug if found. */
+export async function findByUrl(url: string, type?: Meta["type"]): Promise<string | null> {
   const needle = normalizeUrl(url);
   try {
     const files = await readdir(ARTICLES_DIR);
@@ -36,10 +36,15 @@ export async function findByUrl(url: string): Promise<string | null> {
     for (const file of mds) {
       const text = await readFile(join(ARTICLES_DIR, file), "utf-8");
       // Parse the url from frontmatter
-      const urlMatch = text.match(/^url:\s*(.+)$/m);
+      const urlMatch = text.match(/^url:\s*"?(.+?)"?\s*$/m);
       if (urlMatch) {
-        const storedUrl = urlMatch[1].trim();
+        const storedUrl = urlMatch[1];
         if (normalizeUrl(storedUrl) === needle) {
+          // If type filter specified, check it matches
+          if (type) {
+            const typeMatch = text.match(/^type:\s*(.+)$/m);
+            if (typeMatch && typeMatch[1].trim() !== type) continue;
+          }
           return file.replace(".md", "");
         }
       }
@@ -71,14 +76,16 @@ export function generateSlug(title: string): string {
 interface Meta {
   title: string;
   url: string;
-  type: "web" | "youtube";
+  type: "web" | "youtube" | "site";
   words: number;
 }
 
 function frontmatter(meta: Meta): string {
+  // Escape backslashes first, then quotes, to avoid double-escaping
+  const safeTitle = meta.title.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
   return `---
-title: "${meta.title.replace(/"/g, '\\"')}"
-url: ${meta.url}
+title: "${safeTitle}"
+url: "${meta.url}"
 date: ${new Date().toISOString()}
 type: ${meta.type}
 words: ${meta.words}
@@ -148,8 +155,8 @@ export async function resolveSourceUrl(url: string): Promise<string | null> {
   if (slug.includes("/") || slug.includes("\\")) return null;
   try {
     const text = await readFile(join(ARTICLES_DIR, `${slug}.md`), "utf-8");
-    const urlMatch = text.match(/^url:\s*(.+)$/m);
-    return urlMatch?.[1]?.trim() || null;
+    const urlMatch = text.match(/^url:\s*"?(.+?)"?\s*$/m);
+    return urlMatch?.[1] || null;
   } catch {
     return null;
   }

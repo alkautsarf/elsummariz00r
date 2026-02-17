@@ -1,0 +1,20 @@
+#!/bin/bash
+# qutebrowser userscript: :resummarize-site
+# Force re-summarize an entire docs site, ignoring cache.
+# Runs on demand, no server needed.
+
+export PATH="$HOME/.bun/bin:$PATH"
+ELS_DIR="$HOME/Documents/elsummariz00r"
+
+echo "message-info 'elsummariz00r: re-summarizing site...'" >> "$QUTE_FIFO"
+
+RESULT=$(CLAUDECODE= bun run "$ELS_DIR/src/index.ts" --redo --json --site "$QUTE_URL" 2>/tmp/els-resummarize-site.log)
+
+HTML_PATH=$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin)['htmlPath'])" 2>/dev/null)
+
+if [ -n "$HTML_PATH" ]; then
+  echo "open -t file://$HTML_PATH" >> "$QUTE_FIFO"
+else
+  ERROR=$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('error','unknown error'))" 2>/dev/null)
+  echo "message-error 'elsummariz00r: ${ERROR:-failed}'" >> "$QUTE_FIFO"
+fi

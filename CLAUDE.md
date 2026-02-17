@@ -14,8 +14,9 @@ On-demand CLI tool — no persistent server. Each invocation runs `bun run src/i
 
 ## Entry Points
 
-- `bin/els` — CLI: `els <url>`, `els -d <url>`, `els -d -n <url>`, `els` (active tab)
+- `bin/els` — CLI: `els <url>`, `els -s <url>`, `els -d <url>`, `els -d -n <url>`, `els` (active tab)
 - `bin/qb-summarize` — qutebrowser userscript (`:summarize`), outputs JSON, opens HTML in new tab
+- `bin/qb-summarize-site` — qutebrowser userscript (`:summarize-site`), summarize entire docs site
 - `bin/qb-resummarize` — qutebrowser userscript (`:resummarize`), force re-summarize
 - `bin/qb-discuss` — qutebrowser userscript (`:discuss`), resumes or opens Claude Code in tmux
 - `bin/qb-discuss-new` — qutebrowser userscript (`:discuss-new`), forces new discussion session
@@ -25,7 +26,8 @@ All entry points call `bun run src/index.ts` directly. Shell scripts set `CLAUDE
 ## Key Files
 
 - `src/index.ts` — CLI entry point (parses args, loads .env, calls run.ts)
-- `src/run.ts` — Core orchestration (runSummarize, runDiscuss)
+- `src/run.ts` — Core orchestration (runSummarize, runSummarizeSite, runDiscuss)
+- `src/site.ts` — Site/docs content extraction via HTTP fetch (sitemap + link crawl)
 - `src/cdp.ts` — CDP client (list tabs, extract text)
 - `src/youtube.ts` — YouTube caption extraction via ANDROID innertube
 - `src/summarize.ts` — Claude Agent SDK wrapper

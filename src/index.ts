@@ -1,5 +1,5 @@
 import { HOME } from "./storage";
-import { runSummarize, runDiscuss } from "./run";
+import { runSummarize, runSummarizeSite, runDiscuss } from "./run";
 
 // Load .env from ~/.elsummariz00r/.env
 const envPath = `${HOME}/.env`;
@@ -30,6 +30,7 @@ let discuss = false;
 let json = false;
 let redo = false;
 let forceNew = false;
+let site = false;
 let url: string | undefined;
 let title: string | undefined;
 
@@ -38,6 +39,7 @@ for (const arg of args) {
   else if (arg === "--json") json = true;
   else if (arg === "--redo" || arg === "-r") redo = true;
   else if (arg === "--new" || arg === "-n") forceNew = true;
+  else if (arg === "--site" || arg === "-s") site = true;
   else if (arg === "--discuss-latest") {
     await runDiscuss();
     process.exit(0);
@@ -113,7 +115,9 @@ function mdToAnsi(text: string): string {
 }
 
 try {
-  const result = await runSummarize({ url, title, redo });
+  const result = site
+    ? await runSummarizeSite({ url, redo })
+    : await runSummarize({ url, title, redo });
 
   if (json) {
     // Machine-readable output for userscripts

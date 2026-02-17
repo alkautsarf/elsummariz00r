@@ -1,10 +1,27 @@
-// Simple markdown → HTML (handles: headings, bold, italic, lists, code, links, paragraphs)
+// Simple markdown -> HTML (handles: headings, bold, italic, lists, code, links, paragraphs)
 function md(text: string): string {
-  return text
+  // Extract code blocks first so blank lines inside them don't split the block
+  const codeBlocks: string[] = [];
+  const withCodePlaceholders = text.replace(
+    /```(\w*)\n([\s\S]*?)```/g,
+    (_, lang, code) => {
+      codeBlocks.push(`<pre><code>${esc(code.replace(/\n$/, ""))}</code></pre>`);
+      return `\x00CODE${codeBlocks.length - 1}\x00`;
+    },
+  );
+
+  // Ensure headings are always their own block (Opus often uses single newlines)
+  const normalized = withCodePlaceholders.replace(/^(#{1,3} .+)\n(?!#|\n)/gm, "$1\n\n");
+
+  let result = normalized
     .split("\n\n")
     .map((block) => {
       block = block.trim();
       if (!block) return "";
+
+      // Code block placeholder
+      const codePlaceholder = block.match(/^\x00CODE(\d+)\x00$/);
+      if (codePlaceholder) return codeBlocks[Number(codePlaceholder[1])];
 
       // Headings
       if (block.startsWith("### "))
@@ -21,12 +38,6 @@ function md(text: string): string {
         return `<ul>${items.join("")}</ul>`;
       }
 
-      // Code blocks
-      if (block.startsWith("```")) {
-        const code = block.replace(/^```\w*\n?/, "").replace(/\n?```$/, "");
-        return `<pre><code>${esc(code)}</code></pre>`;
-      }
-
       // Blockquotes
       if (block.startsWith("> ")) {
         const content = block
@@ -40,6 +51,13 @@ function md(text: string): string {
     })
     .filter(Boolean)
     .join("\n");
+
+  // Restore any code block placeholders that ended up inside paragraphs
+  for (let i = 0; i < codeBlocks.length; i++) {
+    result = result.replace(`\x00CODE${i}\x00`, codeBlocks[i]);
+  }
+
+  return result;
 }
 
 function esc(s: string): string {
@@ -52,34 +70,62 @@ function esc(s: string): string {
 }
 
 function inline(s: string): string {
-  // Escape HTML first to prevent XSS, then apply markdown transformations
-  return esc(s)
+  // Extract markdown links before escaping to avoid double-encoding URLs.
+  // Replace links with placeholders, escape everything, then restore.
+  const links: string[] = [];
+  const withPlaceholders = s.replace(
+    /\[([^\]]+)\]\(([^)]+)\)/g,
+    (_, text, url) => {
+      // Only allow http(s) links to prevent javascript: URLs
+      if (/^https?:\/\//i.test(url)) {
+        links.push(`<a href="${esc(url)}" target="_blank">${esc(text)}</a>`);
+      } else {
+        links.push(`${esc(text)} (${esc(url)})`);
+      }
+      return `\x00LINK${links.length - 1}\x00`;
+    },
+  );
+
+  let result = esc(withPlaceholders)
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
     .replace(/`(.+?)`/g, "<code>$1</code>")
-    .replace(
-      /\[([^\]]+)\]\(([^)]+)\)/g,
-      (_, text, url) => {
-        // Only allow http(s) links
-        if (/^https?:\/\//i.test(url)) {
-          return `<a href="${url}" target="_blank">${text}</a>`;
-        }
-        return `${text} (${url})`;
-      },
-    )
     .replace(/\n/g, "<br>");
+
+  // Restore link placeholders
+  for (let i = 0; i < links.length; i++) {
+    result = result.replace(`\x00LINK${i}\x00`, links[i]);
+  }
+
+  return result;
 }
 
 export function generateHTML(meta: {
   title: string;
   url: string;
-  type: "web" | "youtube";
+  type: "web" | "youtube" | "site";
   date: string;
   words: number;
+  pages?: number;
   summary: string;
 }): string {
   const summaryHTML = md(meta.summary);
-  const typeLabel = meta.type === "youtube" ? "Video" : "Article";
+
+  let typeLabel: string;
+  let badgeKey: string;
+  switch (meta.type) {
+    case "youtube":
+      typeLabel = "Video";
+      badgeKey = "yt";
+      break;
+    case "site":
+      typeLabel = "Docs";
+      badgeKey = "site";
+      break;
+    default:
+      typeLabel = "Article";
+      badgeKey = "web";
+  }
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -106,6 +152,8 @@ export function generateHTML(meta: {
     --badge-yt: #f7768e;
     --badge-web-bg: #7aa2f722;
     --badge-web: #7aa2f7;
+    --badge-site-bg: #73daca22;
+    --badge-site: #73daca;
     --toggle-bg: #24283b;
   }
 
@@ -125,6 +173,8 @@ export function generateHTML(meta: {
     --badge-yt: #c62828;
     --badge-web-bg: #1565c018;
     --badge-web: #1565c0;
+    --badge-site-bg: #00695c18;
+    --badge-site: #00695c;
     --toggle-bg: #e0e0e0;
   }
 
@@ -147,8 +197,8 @@ export function generateHTML(meta: {
   .meta { color: var(--meta); font-size: 0.85rem; margin-bottom: 2rem; }
   .meta span { margin-right: 1.5rem; }
   .type-badge {
-    background: var(--badge-${meta.type === "youtube" ? "yt" : "web"}-bg);
-    color: var(--badge-${meta.type === "youtube" ? "yt" : "web"});
+    background: var(--badge-${badgeKey}-bg);
+    color: var(--badge-${badgeKey});
     padding: 0.15rem 0.5rem;
     border-radius: 3px;
     font-size: 0.75rem;
@@ -205,6 +255,7 @@ export function generateHTML(meta: {
   <div class="meta">
     <span class="type-badge">${typeLabel}</span>
     <span>${meta.date}</span>
+    ${meta.pages ? `<span>${meta.pages} pages</span>` : ""}
     <span>~${meta.words.toLocaleString()} words</span>
     <span><a href="${esc(meta.url)}">source</a></span>
   </div>

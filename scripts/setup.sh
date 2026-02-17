@@ -76,7 +76,7 @@ echo ""
 echo "Setting up qutebrowser userscripts..."
 mkdir -p "$USERSCRIPTS_DIR"
 
-for script in summarize resummarize discuss discuss-new; do
+for script in summarize resummarize summarize-site resummarize-site discuss discuss-new; do
   src="$SCRIPT_DIR/bin/qb-$script"
   dest="$USERSCRIPTS_DIR/$script"
   if [ -L "$dest" ] || [ -f "$dest" ]; then
@@ -105,8 +105,9 @@ echo ""
 echo "  c.aliases['summarize'] = 'spawn --userscript summarize'"
 echo "  c.aliases['resummarize'] = 'spawn --userscript resummarize'"
 echo "  c.aliases['discuss'] = 'spawn --userscript discuss'"
+echo "  c.aliases['summarize-site'] = 'spawn --userscript summarize-site'"
 echo "  c.aliases['discuss-new'] = 'spawn --userscript discuss-new'"
 echo ""
 echo "Usage:"
-echo "  CLI:     els <url>  |  els -r <url>  |  els -d <url>  |  els -d -n <url>  |  els (active tab)"
-echo "  Browser: :summarize  |  :resummarize  |  :discuss  |  :discuss-new"
+echo "  CLI:     els <url>  |  els -s <url>  |  els -r <url>  |  els -d <url>  |  els -d -n <url>  |  els (active tab)"
+echo "  Browser: :summarize  |  :summarize-site  |  :resummarize  |  :discuss  |  :discuss-new"

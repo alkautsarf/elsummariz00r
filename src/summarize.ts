@@ -45,17 +45,75 @@ Guidelines:
 - Use simple, direct language
 - Output plain markdown`;
 
+const SITE_SYSTEM_PROMPT = `You are a concise summarization assistant. Summarize the given documentation site (multiple pages) clearly and thoroughly.
+
+Output format:
+- Start with a 2-3 sentence TL;DR of what this site covers overall
+- Then for each page/section, write:
+  ## <Page Title>
+  - 2-4 bullet points covering that page's key content
+- End with a "## Key Takeaways" section: 3-5 bullets that cut across all pages
+
+Guidelines:
+- Output the summary immediately. No preamble, no "I'll do X", no thinking out loud.
+- Focus on what a reader needs to know to understand this documentation
+- Skip pages with no meaningful content (e.g. landing pages, brand guidelines)
+- Write like a human. No em-dashes, no AI jargon like "delve", "leverage", "robust"
+- Use simple, direct language
+- Output plain markdown`;
+
+const SITE_MERGE_PROMPT = `You are a concise summarization assistant. You are given partial summaries of different sections of a large documentation site. Merge them into a single coherent summary.
+
+Output format:
+- Start with a 2-3 sentence TL;DR of what this site covers overall
+- Then organize the key sections logically (group related topics, remove redundancy)
+  ## <Section Title>
+  - 2-4 bullet points covering key content
+- End with a "## Key Takeaways" section: 3-5 bullets that cut across all sections
+
+Guidelines:
+- Output the summary immediately. No preamble, no "I'll do X", no thinking out loud.
+- Merge and deduplicate — don't just concatenate the partial summaries
+- Group related sections together under logical headings
+- Focus on what a reader needs to know to understand this documentation
+- Write like a human. No em-dashes, no AI jargon like "delve", "leverage", "robust"
+- Use simple, direct language
+- Output plain markdown`;
+
 export async function summarize(
   content: string,
-  meta: { title: string; url: string; type: "web" | "youtube" },
+  meta: { title: string; url: string; type: "web" | "youtube" | "site" | "site-merge" },
 ): Promise<string> {
-  const systemPrompt =
-    meta.type === "youtube" ? YOUTUBE_SYSTEM_PROMPT : WEB_SYSTEM_PROMPT;
+  let systemPrompt: string;
+  let typeLabel: string;
+  let contentLabel: string;
 
-  const prompt = `${meta.type === "youtube" ? "Video" : "Article"}: "${meta.title}"
+  switch (meta.type) {
+    case "youtube":
+      systemPrompt = YOUTUBE_SYSTEM_PROMPT;
+      typeLabel = "Video";
+      contentLabel = "Transcript";
+      break;
+    case "site":
+      systemPrompt = SITE_SYSTEM_PROMPT;
+      typeLabel = "Site";
+      contentLabel = "Pages";
+      break;
+    case "site-merge":
+      systemPrompt = SITE_MERGE_PROMPT;
+      typeLabel = "Site";
+      contentLabel = "Pages";
+      break;
+    default:
+      systemPrompt = WEB_SYSTEM_PROMPT;
+      typeLabel = "Article";
+      contentLabel = "Content";
+  }
+
+  const prompt = `${typeLabel}: "${meta.title}"
 Source: ${meta.url}
 
-${meta.type === "youtube" ? "Transcript" : "Content"}:
+${contentLabel}:
 ${content}`;
 
   // Build env without CLAUDECODE to avoid nested session detection
