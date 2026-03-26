@@ -3,8 +3,8 @@ import { SYSTEM_PROMPT } from "./tools";
 import { HOME } from "../storage";
 import { getModel, cleanEnv } from "../env";
 
-const MAX_TURNS = 20;
-const TIMEOUT_MS = 180_000;
+// No maxTurns limit — let the agent run as long as needed
+// No timeout — let the agent run as long as needed
 
 function log(tag: string, ...args: any[]) {
   const ts = new Date().toISOString().slice(11, 19);
@@ -89,12 +89,10 @@ export async function chat(
   await pinTab(tabId, tabUrl);
 
   const abortController = new AbortController();
-  const timeout = setTimeout(() => abortController.abort(), TIMEOUT_MS);
 
   // Build options — resume if we have a session, otherwise start fresh
   const isResume = !!conv.sessionId;
   const options: any = {
-    maxTurns: MAX_TURNS,
     permissionMode: "bypassPermissions",
     allowDangerouslySkipPermissions: true,
     model: getModel(),
@@ -144,7 +142,6 @@ export async function chat(
     log("chat", `error: ${msg}`);
     onStream({ type: "error", content: msg });
   } finally {
-    clearTimeout(timeout);
     conv.active = false;
     await clearPin();
     log("chat", "cleared pin, turn complete");
