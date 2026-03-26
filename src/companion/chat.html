@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>els</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #1a1b26;
+    --surface: #1e1f2e;
+    --surface-2: #262839;
+    --text: #a9b1d6;
+    --text-bright: #c0caf5;
+    --text-dim: #565f89;
+    --accent: #7aa2f7;
+    --green: #9ece6a;
+    --purple: #bb9af7;
+    --cyan: #73daca;
+    --red: #f7768e;
+    --orange: #ff9e64;
+    --yellow: #e0af68;
+    --border: #292e42;
+    --border-bright: #3b4261;
+  }
+
+  body {
+    background: var(--bg);
+    font-family: "Iosevka", "JetBrains Mono", "Fira Code", monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+
+  /* ─── Header ─── */
+  .c-header {
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .c-brand {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  /* ─── Context bar ─── */
+  .c-context {
+    padding: 6px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    background: var(--surface);
+  }
+  .c-ctx-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .c-ctx-dot.on { background: var(--green); }
+  .c-ctx-dot.off { background: var(--text-dim); }
+  .c-ctx-url {
+    color: var(--text-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+
+  /* ─── Chat area ─── */
+  .c-chat {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px 14px;
+    max-width: 100%;
+  }
+
+  /* ─── Empty state ─── */
+  .c-empty {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 30px;
+  }
+  .c-empty-mark {
+    font-size: 24px;
+    font-weight: 700;
+    opacity: 0.08;
+    color: var(--text);
+    font-style: normal;
+  }
+  .c-empty p { font-size: 12px; line-height: 1.5; }
+  .c-empty .hint { font-size: 10px; opacity: 0.4; margin-top: 2px; }
+
+  /* ─── Messages ─── */
+  .c-messages {
+    display: none;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .c-msg-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    margin-bottom: 3px;
+    opacity: 0.7;
+  }
+  .c-msg-label.you { color: var(--accent); }
+  .c-msg-label.ai { color: var(--purple); }
+
+  .c-msg-body {
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--text);
+    overflow-wrap: break-word;
+    word-break: break-word;
+    min-width: 0;
+  }
+  .c-msg.you .c-msg-body { color: var(--text-bright); }
+  .c-msg-body p { margin-bottom: 6px; }
+  .c-msg-body p:last-child { margin-bottom: 0; }
+  .c-msg-body strong { color: var(--text-bright); font-weight: 600; }
+  .c-msg-body em { color: var(--purple); font-style: italic; }
+  .c-msg-body code {
+    background: var(--surface-2);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--cyan);
+  }
+  .c-msg-body pre {
+    background: var(--surface-2);
+    padding: 10px 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 8px 0;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .c-msg-body ul, .c-msg-body ol { margin: 4px 0 4px 16px; }
+  .c-msg-body li { margin-bottom: 2px; }
+  .c-msg-body li::marker { color: var(--text-dim); }
+  .c-msg-body a { color: var(--accent); text-decoration: none; }
+  .c-msg-body a:hover { text-decoration: underline; }
+  .c-msg-body blockquote {
+    border-left: 2px solid var(--text-dim);
+    padding-left: 10px;
+    color: var(--cyan);
+    margin: 6px 0;
+  }
+  .c-msg-body h1, .c-msg-body h2, .c-msg-body h3 {
+    color: var(--green);
+    font-size: 13px;
+    margin: 10px 0 4px;
+  }
+
+  /* ─── Tool call ─── */
+  .c-tool {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 11px;
+    color: var(--text-dim);
+    opacity: 0.6;
+  }
+  .c-tool .t-icon {
+    color: var(--orange);
+    font-size: 9px;
+    flex-shrink: 0;
+  }
+  .c-tool .t-cmd {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-dim);
+    font-family: inherit;
+  }
+
+  /* ─── Separator ─── */
+  .c-sep {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 4px 0;
+    opacity: 0.5;
+  }
+
+  /* ─── Typing ─── */
+  .c-typing {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 0;
+  }
+  .c-dots span {
+    display: inline-block;
+    width: 3px; height: 3px;
+    background: var(--purple);
+    border-radius: 50%;
+    margin-right: 1px;
+    animation: dot 1s infinite;
+  }
+  .c-dots span:nth-child(2) { animation-delay: 0.15s; }
+  .c-dots span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes dot {
+    0%, 60%, 100% { opacity: 0.15; }
+    30% { opacity: 0.8; }
+  }
+
+  /* ─── Error ─── */
+  .c-error {
+    padding: 5px 10px;
+    border-left: 2px solid var(--red);
+    background: #f7768e06;
+    font-size: 11px;
+    color: var(--red);
+    border-radius: 0 4px 4px 0;
+    opacity: 0.8;
+  }
+
+  /* ─── Reconnect ─── */
+  .c-reconnect {
+    padding: 5px 14px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--yellow);
+    text-align: center;
+    display: none;
+    flex-shrink: 0;
+  }
+
+  /* ─── Input ─── */
+  .c-input-area {
+    padding: 10px 14px 12px;
+    flex-shrink: 0;
+  }
+  .c-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-bright);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 10px 14px;
+    outline: none;
+    resize: none;
+    min-height: 20px;
+    max-height: 100px;
+    line-height: 1.4;
+    transition: border-color 0.15s;
+  }
+  .c-input:focus { border-color: var(--border-bright); }
+  .c-input::placeholder { color: var(--text-dim); opacity: 0.5; }
+  .c-input:disabled { opacity: 0.4; }
+</style>
+</head>
+<body>
+
+<div class="c-context">
+  <span class="c-ctx-dot off" id="ctxDot"></span>
+  <span class="c-ctx-url" id="ctxUrl">connecting...</span>
+</div>
+
+<div class="c-reconnect" id="reconnectBar">reconnecting...</div>
+
+<div class="c-chat" id="chat">
+  <div class="c-empty" id="empty">
+    <em class="c-empty-mark">els</em>
+    <p>ask anything about this page</p>
+    <p class="hint">gc to focus / tab to scroll / esc to exit</p>
+  </div>
+  <div class="c-messages" id="msgs"></div>
+</div>
+
+<div class="c-input-area">
+  <textarea class="c-input" id="input" placeholder="ask..." rows="1"
+    onkeydown="handleKey(event)"
+    oninput="autoResize(this)"></textarea>
+</div>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const tabId = params.get('tabId') || '';
+  const tabUrl = params.get('url') || '';
+  const WS_URL = `ws://${location.host}/ws?tabId=${encodeURIComponent(tabId)}&url=${encodeURIComponent(tabUrl)}`;
+
+  const chat = document.getElementById('chat');
+  const msgs = document.getElementById('msgs');
+  const empty = document.getElementById('empty');
+  const input = document.getElementById('input');
+  const ctxDot = document.getElementById('ctxDot');
+  const ctxUrl = document.getElementById('ctxUrl');
+  const reconnectBar = document.getElementById('reconnectBar');
+
+  let ws = null;
+  let busy = false;
+
+  // ─── Markdown ───
+  function esc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function inlineMd(s) {
+    const links = [];
+    const withPh = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) => {
+      if (/^https?:\/\//i.test(url)) {
+        links.push(`<a href="${esc(url)}" target="_blank">${esc(text)}</a>`);
+      } else { links.push(`${esc(text)}`); }
+      return `\x00L${links.length-1}\x00`;
+    });
+    let r = esc(withPh)
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/`(.+?)`/g, '<code>$1</code>')
+      .replace(/\n/g, '<br>');
+    for (let i = 0; i < links.length; i++) r = r.replace(`\x00L${i}\x00`, links[i]);
+    return r;
+  }
+
+  function md(text) {
+    const cb = [];
+    const t = text.replace(/```(\w*)\n([\s\S]*?)```/g, (_, l, c) => {
+      cb.push(`<pre><code>${esc(c.replace(/\n$/, ''))}</code></pre>`);
+      return `\x00C${cb.length-1}\x00`;
+    }).replace(/^(#{1,3} .+)\n(?!#|\n)/gm, '$1\n\n');
+
+    let r = t.split('\n\n').map(b => {
+      b = b.trim(); if (!b) return '';
+      const m = b.match(/^\x00C(\d+)\x00$/); if (m) return cb[+m[1]];
+      if (b.startsWith('### ')) return `<h3>${inlineMd(b.slice(4))}</h3>`;
+      if (b.startsWith('## ')) return `<h2>${inlineMd(b.slice(3))}</h2>`;
+      if (b.startsWith('# ')) return `<h1>${inlineMd(b.slice(2))}</h1>`;
+      if (/^[-*] /.test(b)) return `<ul>${b.split(/\n(?=[-*] )/).map(l=>`<li>${inlineMd(l.replace(/^[-*] /,''))}</li>`).join('')}</ul>`;
+      if (b.startsWith('> ')) return `<blockquote>${inlineMd(b.split('\n').map(l=>l.replace(/^>\s?/,'')).join('\n'))}</blockquote>`;
+      return `<p>${inlineMd(b)}</p>`;
+    }).filter(Boolean).join('\n');
+    for (let i = 0; i < cb.length; i++) r = r.replace(`\x00C${i}\x00`, cb[i]);
+    return r;
+  }
+
+  // ─── Tool call cleanup ───
+  function cleanToolCall(name, rawDetail) {
+    // Parse command from JSON input
+    try {
+      const parsed = JSON.parse(rawDetail);
+      if (parsed.command) {
+        // Strip the AGENT_BROWSER_CDP prefix
+        let cmd = parsed.command
+          .replace(/^agent-browser close 2>\/dev\/null;\s*/, '')
+          .replace(/^export AGENT_BROWSER_CDP=9222\s*&&\s*/, '')
+          .replace(/^export AGENT_BROWSER_CDP=9222\s*;\s*/, '');
+        return cmd;
+      }
+    } catch {}
+    return rawDetail;
+  }
+
+  // ─── UI ───
+  function showMsgs() { empty.style.display = 'none'; msgs.style.display = 'flex'; }
+
+  function addMsg(role, html) {
+    showMsgs();
+    const d = document.createElement('div');
+    d.className = `c-msg ${role}`;
+    const label = role === 'you' ? 'you' : 'els';
+    d.innerHTML = `<div class="c-msg-label ${role}">${label}</div><div class="c-msg-body">${html}</div>`;
+    msgs.appendChild(d);
+    chat.scrollTop = chat.scrollHeight;
+    return d;
+  }
+
+  function addTool(name, detail) {
+    showMsgs();
+    const cmd = cleanToolCall(name, detail);
+    const d = document.createElement('div');
+    d.className = 'c-tool';
+    d.innerHTML = `<span class="t-icon">&#9656;</span><span class="t-cmd">${esc(cmd)}</span>`;
+    msgs.appendChild(d);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function addError(text) {
+    showMsgs();
+    const d = document.createElement('div');
+    d.className = 'c-error';
+    d.textContent = text;
+    msgs.appendChild(d);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function addSep() {
+    showMsgs();
+    const hr = document.createElement('hr');
+    hr.className = 'c-sep';
+    msgs.appendChild(hr);
+  }
+
+  function addTyping() {
+    showMsgs();
+    const d = document.createElement('div');
+    d.className = 'c-typing';
+    d.id = 'typing';
+    d.innerHTML = '<div class="c-dots"><span></span><span></span><span></span></div>';
+    msgs.appendChild(d);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function rmTyping() { document.getElementById('typing')?.remove(); }
+
+  function setBusy(b) {
+    busy = b;
+    input.disabled = b;
+    ctxDot.className = `c-ctx-dot ${b ? 'on' : (ws?.readyState === 1 ? 'on' : 'off')}`;
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+    if (e.key === 'Tab') { e.preventDefault(); input.blur(); chat.focus(); }
+  }
+
+  // Scroll mode
+  chat.setAttribute('tabindex', '0');
+  document.addEventListener('keydown', (e) => {
+    if (document.activeElement === input) return;
+    switch (e.key) {
+      case 'j': chat.scrollTop += 80; e.preventDefault(); e.stopPropagation(); break;
+      case 'k': chat.scrollTop -= 80; e.preventDefault(); e.stopPropagation(); break;
+      case 'd': chat.scrollTop += chat.clientHeight/2; e.preventDefault(); e.stopPropagation(); break;
+      case 'u': chat.scrollTop -= chat.clientHeight/2; e.preventDefault(); e.stopPropagation(); break;
+      case 'G': chat.scrollTop = chat.scrollHeight; e.preventDefault(); e.stopPropagation(); break;
+      case 'g': chat.scrollTop = 0; e.preventDefault(); e.stopPropagation(); break;
+      case 'i': input.focus(); e.preventDefault(); e.stopPropagation(); break;
+      case 'Escape': document.activeElement?.blur?.(); break;
+    }
+  }, true);
+
+  // ─── WebSocket ───
+  let reconnectTimer = null;
+  let currentMsgEl = null;
+  let currentMsgText = '';
+
+  function connect() {
+    if (ws && ws.readyState <= 1) return;
+    ws = new WebSocket(WS_URL);
+
+    ws.onopen = async () => {
+      ctxDot.className = 'c-ctx-dot on';
+      ctxUrl.textContent = tabUrl ? tabUrl.replace(/^https?:\/\//, '').replace(/\/$/, '') : 'connected';
+      reconnectBar.style.display = 'none';
+      if (reconnectTimer) { clearInterval(reconnectTimer); reconnectTimer = null; }
+      if (msgs.children.length === 0) {
+        try {
+          const resp = await fetch(`/history?tabId=${encodeURIComponent(tabId)}&url=${encodeURIComponent(tabUrl)}`);
+          const history = await resp.json();
+          if (history.length > 0) {
+            for (const msg of history) {
+              if (msg.role === 'user') addMsg('you', esc(msg.content));
+              else if (msg.role === 'assistant') { addMsg('ai', md(msg.content)); addSep(); }
+            }
+          }
+        } catch {}
+      }
+    };
+
+    ws.onmessage = (e) => {
+      let data; try { data = JSON.parse(e.data); } catch { return; }
+      switch (data.type) {
+        case 'text':
+          rmTyping();
+          if (currentMsgEl) {
+            currentMsgEl.querySelector('.c-msg-body').innerHTML = md(data.content);
+          } else {
+            currentMsgEl = addMsg('ai', md(data.content));
+          }
+          currentMsgText = data.content;
+          chat.scrollTop = chat.scrollHeight;
+          break;
+        case 'tool_use':
+          rmTyping();
+          currentMsgEl = null;
+          currentMsgText = '';
+          addTool(data.toolName || 'tool', data.content || '');
+          addTyping();
+          break;
+        case 'error':
+          rmTyping();
+          addError(data.content);
+          setBusy(false);
+          currentMsgEl = null;
+          currentMsgText = '';
+          break;
+        case 'done':
+          rmTyping();
+          setBusy(false);
+          if (currentMsgText) addSep();
+          currentMsgEl = null;
+          currentMsgText = '';
+          break;
+        case 'cleared':
+          msgs.innerHTML = '';
+          msgs.style.display = 'none';
+          empty.style.display = 'flex';
+          break;
+      }
+    };
+
+    ws.onclose = () => {
+      ctxDot.className = 'c-ctx-dot off';
+      ctxUrl.textContent = 'disconnected';
+      reconnectBar.style.display = 'block';
+      if (!reconnectTimer) reconnectTimer = setInterval(connect, 3000);
+    };
+    ws.onerror = () => ws.close();
+  }
+
+  function send() {
+    const text = input.value.trim();
+    if (!text || busy || !ws || ws.readyState !== 1) return;
+    addMsg('you', esc(text));
+    ws.send(JSON.stringify({ type: 'chat', content: text }));
+    input.value = '';
+    input.style.height = 'auto';
+    setBusy(true);
+    addTyping();
+  }
+
+  function clearChat() {
+    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'clear' }));
+    msgs.innerHTML = '';
+    msgs.style.display = 'none';
+    empty.style.display = 'flex';
+    currentMsgEl = null;
+    currentMsgText = '';
+  }
+
+  connect();
+  input.focus();
+</script>
+</body>
+</html>

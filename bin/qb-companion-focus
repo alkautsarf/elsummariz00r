@@ -1,0 +1,4 @@
+#!/bin/bash
+# elsummariz00r companion focus — ensure panel is visible and focus it
+# Writes "focus" signal; config.py shows panel if hidden, then calls cycle_focus
+echo "focus" > /tmp/els-companion-focus

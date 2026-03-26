@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "summarize": "bun run src/index.ts",
+    "companion": "bun run src/companion/index.ts",
     "setup": "bash scripts/setup.sh"
   },
   "dependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.2.38"
+    "@anthropic-ai/claude-agent-sdk": "^0.2.84"
   }
 }

@@ -1,28 +1,7 @@
-import { HOME } from "./storage";
 import { runSummarize, runSummarizeSite, runDiscuss } from "./run";
+import { loadEnv } from "./env";
 
-// Load .env from ~/.elsummariz00r/.env
-const envPath = `${HOME}/.env`;
-try {
-  const envFile = Bun.file(envPath);
-  if (await envFile.exists()) {
-    const text = await envFile.text();
-    for (const line of text.split("\n")) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) continue;
-      const eq = trimmed.indexOf("=");
-      if (eq > 0) {
-        const key = trimmed.slice(0, eq);
-        const value = trimmed.slice(eq + 1);
-        if (!process.env[key]) {
-          process.env[key] = value;
-        }
-      }
-    }
-  }
-} catch {
-  // .env not found, rely on shell environment
-}
+await loadEnv();
 
 // Parse CLI args: els [--discuss] [--json] [--redo] [url]
 const args = process.argv.slice(2);

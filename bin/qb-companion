@@ -1,0 +1,3 @@
+#!/bin/bash
+# elsummariz00r companion toggle — signals config.py to show/hide the panel
+echo "toggle" > /tmp/els-companion-signal

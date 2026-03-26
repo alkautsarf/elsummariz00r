@@ -1,11 +1,7 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
+import { getModel, cleanEnv } from "./env";
 
 const TIMEOUT_MS = 120_000;
-const DEFAULT_MODEL = "claude-opus-4-6";
-
-function getModel(): string {
-  return process.env.ELS_MODEL || DEFAULT_MODEL;
-}
 
 export function getModelLabel(): string {
   const model = getModel();
@@ -116,9 +112,7 @@ Source: ${meta.url}
 ${contentLabel}:
 ${content}`;
 
-  // Build env without CLAUDECODE to avoid nested session detection
-  const env: Record<string, string | undefined> = { ...process.env };
-  delete env.CLAUDECODE;
+  const env = cleanEnv();
 
   const sdkCall = async (): Promise<string> => {
     for await (const message of query({
@@ -130,6 +124,7 @@ ${content}`;
         permissionMode: "bypassPermissions",
         allowDangerouslySkipPermissions: true,
         model: getModel(),
+        thinking: { type: "adaptive" },
         env,
       },
     })) {
