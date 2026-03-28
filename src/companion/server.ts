@@ -39,12 +39,8 @@ export function startServer() {
 
       // WebSocket upgrade
       if (url.pathname === "/ws") {
-        let tabId = url.searchParams.get("tabId") || "";
+        const tabId = url.searchParams.get("tabId") || "";
         const tabUrl = url.searchParams.get("url") || "";
-        // When tabId is "auto", use the URL as the unique conversation key
-        if (tabId === "auto" && tabUrl) {
-          tabId = tabUrl;
-        }
         const ok = server.upgrade(req, { data: { tabId, tabUrl } });
         return ok ? undefined : new Response("WS upgrade failed", { status: 400 });
       }
@@ -61,11 +57,16 @@ export function startServer() {
         });
       }
 
-      // Tab list (for the chat UI to resolve CDP target IDs)
+      // Tab list (for the chat UI to resolve current page URL)
       if (url.pathname === "/tabs") {
         try {
           const tabs = await listTabs();
-          return Response.json(tabs);
+          // Filter out companion panel views
+          const real = tabs.filter(t =>
+            !t.url.includes(`localhost:${COMPANION_PORT}`) &&
+            !t.url.includes(`127.0.0.1:${COMPANION_PORT}`)
+          );
+          return Response.json(real);
         } catch {
           return Response.json([], { status: 502 });
         }
@@ -96,9 +97,8 @@ export function startServer() {
 
       // Conversation history for a tab
       if (url.pathname === "/history") {
-        let tabId = url.searchParams.get("tabId") || "";
+        const tabId = url.searchParams.get("tabId") || "";
         const tabUrl = url.searchParams.get("url") || "";
-        if (tabId === "auto" && tabUrl) tabId = tabUrl;
         const conv = getConversation(tabId);
         return Response.json(conv?.messages || []);
       }
@@ -124,17 +124,17 @@ export function startServer() {
         }
 
         if (msg.type === "chat" && msg.content) {
+          // Use fresh URL from message if provided, fallback to WS connect URL
+          const currentUrl = (msg as any).url || tabUrl;
           const onStream: StreamCallback = (event) => {
             try {
               if (ws.readyState === 1) {
                 ws.send(JSON.stringify(event));
               }
-            } catch {
-              // WS might have closed mid-stream
-            }
+            } catch {}
           };
 
-          await chat(tabId, tabUrl, msg.content, onStream);
+          await chat(tabId, currentUrl, msg.content, onStream);
         }
 
         if (msg.type === "clear") {

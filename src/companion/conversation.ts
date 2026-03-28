@@ -115,11 +115,16 @@ export async function chat(
     options.persistSession = true;
   }
 
+  // Always include current page URL so Claude knows what tab it's on
+  const promptWithContext = tabUrl
+    ? `[Current page: ${tabUrl}]\n\n${userMessage}`
+    : userMessage;
+
   try {
     let assistantText = "";
     const streaming = { text: "" };
 
-    for await (const message of query({ prompt: userMessage, options })) {
+    for await (const message of query({ prompt: promptWithContext, options })) {
       // Capture session ID from init message
       if (message.type === "system" && (message as any).subtype === "init") {
         const sid = (message as any).session_id;

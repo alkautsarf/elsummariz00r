@@ -547,15 +547,28 @@
     ws.onerror = () => ws.close();
   }
 
-  function send() {
+  async function send() {
     const text = input.value.trim();
     if (!text || busy || !ws || ws.readyState !== 1) return;
     addMsg('you', esc(text));
-    ws.send(JSON.stringify({ type: 'chat', content: text }));
     input.value = '';
     input.style.height = 'auto';
     setBusy(true);
     addTyping();
+
+    // Resolve current page URL from server (may have changed since panel opened)
+    let currentUrl = tabUrl;
+    try {
+      const resp = await fetch('/tabs');
+      const tabs = await resp.json();
+      if (tabs.length > 0) {
+        // Active tab is index 0
+        currentUrl = tabs[0].url || tabUrl;
+        ctxUrl.textContent = currentUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      }
+    } catch {}
+
+    ws.send(JSON.stringify({ type: 'chat', content: text, url: currentUrl }));
   }
 
   function clearChat() {
