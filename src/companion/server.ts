@@ -1,4 +1,4 @@
-import { chat, getConversation, clearConversation, type StreamCallback } from "./conversation";
+import { chat, getConversation, clearConversation, interruptConversation, type StreamCallback } from "./conversation";
 import { COMPANION_PORT } from "./tools";
 import { listTabs } from "../cdp";
 import { isYouTube, extractVideoId, fetchCaptions } from "../youtube";
@@ -14,22 +14,6 @@ interface WSData {
 }
 
 export function startServer() {
-  // Kill any existing server on this port
-  try {
-    const old = Bun.spawnSync(["lsof", "-ti", `tcp:${COMPANION_PORT}`]);
-    const pids = old.stdout.toString().trim();
-    if (pids) {
-      for (const pid of pids.split("\n")) {
-        const p = parseInt(pid);
-        if (p && p !== process.pid) {
-          try { process.kill(p, "SIGTERM"); } catch {}
-        }
-      }
-      // Brief wait for port to free
-      Bun.sleepSync(500);
-    }
-  } catch {}
-
   const server = Bun.serve<WSData>({
     port: COMPANION_PORT,
     hostname: "127.0.0.1",
@@ -135,6 +119,11 @@ export function startServer() {
           };
 
           await chat(tabId, currentUrl, msg.content, onStream);
+        }
+
+        if (msg.type === "interrupt") {
+          interruptConversation(tabId);
+          ws.send(JSON.stringify({ type: "interrupted" }));
         }
 
         if (msg.type === "clear") {

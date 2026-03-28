@@ -22,11 +22,10 @@ export AGENT_BROWSER_CDP=9222 && agent-browser scroll down 500
 export AGENT_BROWSER_CDP=9222 && agent-browser press Enter
 \`\`\`
 
-### Navigate
+### Navigate (within current tab only)
 \`\`\`bash
 export AGENT_BROWSER_CDP=9222 && agent-browser open "https://example.com"
 export AGENT_BROWSER_CDP=9222 && agent-browser back
-export AGENT_BROWSER_CDP=9222 && agent-browser tab new "https://example.com"
 \`\`\`
 
 ### Page info
@@ -152,10 +151,7 @@ Generate a self-contained HTML page. Use this exact template with Tokyo Night th
 
 Replace TITLE, TYPE_BADGE (Article/Video/Docs), DATE, WORDS, URL, and SUMMARY_HTML. Convert the markdown summary to HTML for SUMMARY_HTML.
 
-**After saving all three files, ALWAYS open the HTML:**
-\`\`\`bash
-export AGENT_BROWSER_CDP=9222 && agent-browser tab new "file://${HOME}/html/<slug>.html"
-\`\`\`
+**After saving all three files, tell the user the file path so they can open it.**
 
 ## Stored Summaries
 
@@ -180,4 +176,8 @@ grep -l "keyword" ${HOME}/summaries/*.md
 - If snapshot shows localhost:7700 or the companion UI, run \`agent-browser close\` and try again
 - NEVER use curl to hit CDP endpoints directly. NEVER use python3 websocket scripts. ONLY use agent-browser CLI commands.
 - NEVER try to activate tabs via curl POST to /json/activate. The proxy handles tab targeting automatically.
+- NEVER use WebFetch, WebSearch, or curl to access websites. NEVER. You MUST use agent-browser to browse the web through the user's qutebrowser. If you need to check a website, use \`agent-browser open "url"\` to navigate there in the current tab, then snapshot it.
+- NEVER open new tabs. NEVER use \`agent-browser tab new\`. Always work within the current tab you're on.
+- NEVER write files to .claude/projects/ or any Claude memory directory. When saving ANY files, save them to ${HOME}/ only.
+- NEVER use curl/wget to fetch web pages. The ONLY way to access the web is through agent-browser in the user's browser.
 - Keep it simple: snapshot first, then interact with refs. Don't overcomplicate things.`;

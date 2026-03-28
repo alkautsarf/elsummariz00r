@@ -21,7 +21,8 @@ export interface TabConversation {
   url: string;
   messages: ChatMessage[];
   active: boolean;
-  sessionId: string | null; // Claude Agent SDK session ID for resumption
+  sessionId: string | null;
+  abortController: AbortController | null;
 }
 
 const conversations = new Map<string, TabConversation>();
@@ -31,7 +32,17 @@ export function getConversation(tabId: string): TabConversation | undefined {
 }
 
 export function clearConversation(tabId: string): void {
+  interruptConversation(tabId);
   conversations.delete(tabId);
+}
+
+export function interruptConversation(tabId: string): void {
+  const conv = conversations.get(tabId);
+  if (conv?.active && conv.abortController) {
+    log("chat", `interrupting tab=${tabId.slice(0, 12)}`);
+    conv.abortController.abort();
+    conv.active = false;
+  }
 }
 
 /** Pin the target tab in the CDP proxy before running agent-browser commands. */
@@ -54,7 +65,7 @@ async function clearPin(): Promise<void> {
 }
 
 export type StreamCallback = (event: {
-  type: "text" | "tool_use" | "tool_result" | "done" | "error";
+  type: "text" | "tool_use" | "tool_result" | "done" | "error" | "interrupted";
   content: string;
   toolName?: string;
 }) => void;
@@ -71,13 +82,16 @@ export async function chat(
 ): Promise<void> {
   let conv = conversations.get(tabId);
   if (!conv) {
-    conv = { tabId, url: tabUrl, messages: [], active: false, sessionId: null };
+    conv = { tabId, url: tabUrl, messages: [], active: false, sessionId: null, abortController: null };
     conversations.set(tabId, conv);
   }
 
+  // If already active, interrupt the current run first
   if (conv.active) {
-    onStream({ type: "error", content: "Already processing a message" });
-    return;
+    log("chat", "interrupting active conversation");
+    await interruptConversation(tabId);
+    // Brief wait for abort to propagate
+    await new Promise(r => setTimeout(r, 200));
   }
 
   conv.active = true;
@@ -89,6 +103,7 @@ export async function chat(
   await pinTab(tabId, tabUrl);
 
   const abortController = new AbortController();
+  conv.abortController = abortController;
 
   // Build options — resume if we have a session, otherwise start fresh
   const isResume = !!conv.sessionId;
@@ -101,6 +116,7 @@ export async function chat(
     abortController,
     includePartialMessages: true,
     thinking: { type: "adaptive" },
+    disallowedTools: ["WebFetch", "WebSearch"],
   };
 
   if (isResume) {
@@ -143,11 +159,16 @@ export async function chat(
     conv.messages.push({ role: "assistant", content: assistantText });
     onStream({ type: "done", content: "" });
   } catch (err: any) {
-    const msg = err.name === "AbortError" ? "Timed out" : err.message;
-    log("chat", `error: ${msg}`);
-    onStream({ type: "error", content: msg });
+    if (err.name === "AbortError" || abortController.signal.aborted) {
+      log("chat", "interrupted");
+      onStream({ type: "interrupted" as any, content: "" });
+    } else {
+      log("chat", `error: ${err.message}`);
+      onStream({ type: "error", content: err.message });
+    }
   } finally {
     conv.active = false;
+    conv.abortController = null;
     await clearPin();
     log("chat", "cleared pin, turn complete");
   }

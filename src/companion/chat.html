@@ -438,7 +438,7 @@
 
   function setBusy(b) {
     busy = b;
-    input.disabled = b;
+    // Input stays enabled — user can type to interrupt or send new message
     ctxDot.className = `c-ctx-dot ${b ? 'on' : (ws?.readyState === 1 ? 'on' : 'off')}`;
   }
 
@@ -450,6 +450,10 @@
   function handleKey(e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
     if (e.key === 'Tab') { e.preventDefault(); input.blur(); chat.focus(); }
+    if (e.key === 'c' && e.ctrlKey && busy && ws?.readyState === 1) {
+      e.preventDefault();
+      ws.send(JSON.stringify({ type: 'interrupt' }));
+    }
   }
 
   // Scroll mode
@@ -464,6 +468,7 @@
       case 'G': chat.scrollTop = chat.scrollHeight; e.preventDefault(); e.stopPropagation(); break;
       case 'g': chat.scrollTop = 0; e.preventDefault(); e.stopPropagation(); break;
       case 'i': input.focus(); e.preventDefault(); e.stopPropagation(); break;
+      case 'c': clearChat(); e.preventDefault(); e.stopPropagation(); break;
       case 'Escape': document.activeElement?.blur?.(); break;
     }
   }, true);
@@ -530,10 +535,18 @@
           currentMsgEl = null;
           currentMsgText = '';
           break;
+        case 'interrupted':
+          rmTyping();
+          setBusy(false);
+          currentMsgEl = null;
+          currentMsgText = '';
+          break;
         case 'cleared':
           msgs.innerHTML = '';
           msgs.style.display = 'none';
           empty.style.display = 'flex';
+          currentMsgEl = null;
+          currentMsgText = '';
           break;
       }
     };
@@ -549,7 +562,7 @@
 
   async function send() {
     const text = input.value.trim();
-    if (!text || busy || !ws || ws.readyState !== 1) return;
+    if (!text || !ws || ws.readyState !== 1) return;
     addMsg('you', esc(text));
     input.value = '';
     input.style.height = 'auto';
