@@ -1,0 +1,47 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+Format based on [Keep a Changelog](https://keepachangelog.com/).
+
+## [0.2.0] - 2026-03-28
+
+### Added
+
+- Companion mode — AI chat panel inside qutebrowser via InspectorSplitter
+- Per-tab conversations with session persistence and resumption
+- Streaming responses with markdown rendering
+- Browser interaction via agent-browser v0.22.3 (snapshot, click, fill, scroll)
+- YouTube transcript extraction endpoint for video summarization
+- Persistent summary skill — save articles, summaries, and HTML pages
+- Keyboard navigation: `gc` to focus panel, `Tab`/`j`/`k` to scroll, `i` to type
+- Interrupt support: `Ctrl+c` to cancel, send new message to redirect
+- Tool lockdown: SDK isolation, disallowed WebFetch/WebSearch/Agent, curl blocking
+- Auto-start companion server and CDP proxy with qutebrowser
+- Cleanup on qb exit via atexit hooks
+- `elsr` restart script for companion server
+- Shared env module (`src/env.ts`) for model config and env loading
+
+### Changed
+
+- Upgraded Claude Agent SDK from 0.2.38 to 0.2.84
+- Summarization now uses adaptive thinking
+- Agent-browser skill rewritten for v0.22.3 snapshot-first approach
+
+## [0.1.0] - 2026-03-25
+
+### Added
+
+- Initial release
+- Web page summarization via CDP extraction from qutebrowser
+- YouTube video summarization via ANDROID innertube API
+- Site/docs summarization with map-reduce for large sites
+- CLI (`els`) and qutebrowser userscripts
+- Discussion mode via Claude Code in tmux
+- Session resume for discussions
+- Self-contained HTML summary pages with Tokyo Night theme
+- Dark/light mode toggle
+- Dedup and caching
+
+[0.2.0]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.2.0
+[0.1.0]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.1.0

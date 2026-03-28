@@ -116,7 +116,18 @@ export async function chat(
     abortController,
     includePartialMessages: true,
     thinking: { type: "adaptive" },
-    disallowedTools: ["WebFetch", "WebSearch"],
+    settingSources: [], // SDK isolation — don't load ~/.claude/settings.json
+    disallowedTools: ["WebFetch", "WebSearch", "ToolSearch", "Agent"],
+    canUseTool: (toolName: string, input: Record<string, unknown>) => {
+      // Block curl/wget to external URLs (allow localhost for YouTube transcript endpoint)
+      if (toolName === "Bash") {
+        const cmd = String(input.command || "");
+        if (/\b(curl|wget)\b/i.test(cmd) && !cmd.includes("127.0.0.1") && !cmd.includes("localhost")) {
+          return { behavior: "deny" as const, message: "Use agent-browser to access the web, not curl/wget." };
+        }
+      }
+      return { behavior: "allow" as const };
+    },
   };
 
   if (isResume) {
