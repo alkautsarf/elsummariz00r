@@ -127,7 +127,7 @@ The companion panel is injected as a `QWebEngineView` into each tab's InspectorS
 ### Install
 
 ```bash
-git clone https://github.com/elpabl0/elsummariz00r.git
+git clone https://github.com/alkautsarf/elsummariz00r.git
 cd elsummariz00r
 bun install
 bun run setup

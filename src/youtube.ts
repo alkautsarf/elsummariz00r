@@ -84,21 +84,37 @@ function parseXml(body: string): string[] {
 export async function fetchCaptions(
   videoId: string,
 ): Promise<CaptionResult> {
-  // Step 1: Get INNERTUBE_API_KEY from page
+  // Step 1: Fetch watch page (gets API key, cookies, and inline player response)
   const pageResp = await fetch(
     `https://www.youtube.com/watch?v=${videoId}`,
     { headers: { "User-Agent": UA, Accept: "text/html" } },
   );
   const html = await pageResp.text();
+  const pageCookies = (pageResp.headers.getSetCookie?.() ?? [])
+    .map((c: string) => c.split(";")[0])
+    .join("; ");
 
   const titleMatch = html.match(/<title>([^<]+)<\/title>/);
-  const title =
+  let title =
     titleMatch?.[1]?.replace(" - YouTube", "").trim() || "Untitled Video";
 
+  // Step 2: Try inline ytInitialPlayerResponse for title fallback
+  const inlineMatch = html.match(
+    /var\s+ytInitialPlayerResponse\s*=\s*({.+?});\s*(?:var|<\/script)/s,
+  );
+  if (inlineMatch) {
+    try {
+      const pr = JSON.parse(inlineMatch[1]);
+      if (title === "Untitled Video" && pr?.videoDetails?.title) {
+        title = pr.videoDetails.title;
+      }
+    } catch {}
+  }
+
+  // Step 3: ANDROID innertube /player (inline caption URLs don't work server-side)
   const apiKeyMatch = html.match(/"INNERTUBE_API_KEY":"([^"]+)"/);
   if (!apiKeyMatch) throw new Error("Could not find YouTube API key");
 
-  // Step 2: ANDROID innertube /player
   const playerResp = await fetch(
     `https://www.youtube.com/youtubei/v1/player?key=${apiKeyMatch[1]}`,
     {
@@ -107,6 +123,7 @@ export async function fetchCaptions(
         "Content-Type": "application/json",
         "User-Agent": UA,
         Accept: "application/json",
+        Cookie: pageCookies,
       },
       body: JSON.stringify({
         context: {
@@ -126,17 +143,22 @@ export async function fetchCaptions(
 
   const captionTracks: CaptionTrack[] =
     data?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+
   if (!captionTracks?.length) {
     throw new Error("No captions available for this video");
   }
 
-  // Step 3: Fetch best caption track
+  // Step 4: Fetch best caption track (with cookies for restricted videos)
   const track = selectBestTrack(captionTracks);
   const capUrl = new URL(track.baseUrl);
   capUrl.searchParams.set("fmt", "json3");
 
   const capResp = await fetch(capUrl.toString(), {
-    headers: { "User-Agent": UA, "Accept-Language": "en-US,en;q=0.9" },
+    headers: {
+      "User-Agent": UA,
+      "Accept-Language": "en-US,en;q=0.9",
+      Cookie: pageCookies,
+    },
   });
   const capBody = await capResp.text();
 
@@ -153,7 +175,7 @@ export async function fetchCaptions(
   // Fallback: plain XML
   if (lines.length === 0) {
     const xmlResp = await fetch(track.baseUrl, {
-      headers: { "User-Agent": UA },
+      headers: { "User-Agent": UA, Cookie: pageCookies },
     });
     const xmlBody = await xmlResp.text();
     if (xmlBody) lines = parseXml(xmlBody);

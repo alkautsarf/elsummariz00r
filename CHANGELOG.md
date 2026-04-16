@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.1] - 2026-04-16
+
+### Fixed
+
+- YouTube caption extraction — forward page cookies to innertube API and caption fetches for restricted videos
+- Companion CDP isolation — each conversation gets its own proxy port to prevent concurrent sessions from stomping each other's tab pins
+
+### Changed
+
+- Companion system prompt no longer requires manual `export AGENT_BROWSER_CDP=...` — env vars are pre-set
+- Extracted CDP proxy port (`9222`) to `COMPANION_CDP_PROXY` constant
+- Port allocation starts early to overlap with interrupt wait time
+
 ## [0.2.0] - 2026-03-28
 
 ### Added
@@ -43,5 +56,6 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Dark/light mode toggle
 - Dedup and caching
 
+[0.2.1]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.2.1
 [0.2.0]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.2.0
 [0.1.0]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.1.0

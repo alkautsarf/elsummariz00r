@@ -1,5 +1,5 @@
 import { query, type SDKMessage } from "@anthropic-ai/claude-agent-sdk";
-import { SYSTEM_PROMPT } from "./tools";
+import { SYSTEM_PROMPT, COMPANION_CDP_BASE, COMPANION_CDP_PROXY } from "./tools";
 import { HOME } from "../storage";
 import { getModel, cleanEnv } from "../env";
 
@@ -45,22 +45,33 @@ export function interruptConversation(tabId: string): void {
   }
 }
 
-/** Pin the target tab in the CDP proxy before running agent-browser commands. */
-async function pinTab(tabId: string, tabUrl: string): Promise<void> {
+/** Get a free CDP proxy port from the companion range. */
+async function getFreePort(): Promise<number> {
+  try {
+    const resp = await fetch(`http://localhost:${COMPANION_CDP_PROXY}/free?from=${COMPANION_CDP_BASE}`);
+    const data = await resp.json() as { port?: number; error?: string };
+    if (data.port) return data.port;
+  } catch {}
+  log("chat", `CDP proxy unreachable, falling back to port ${COMPANION_CDP_BASE}`);
+  return COMPANION_CDP_BASE;
+}
+
+/** Pin the target tab on a specific CDP proxy port. */
+async function pinTab(port: number, tabId: string, tabUrl: string): Promise<void> {
   try {
     if (tabUrl && tabUrl !== "undefined") {
       const u = new URL(tabUrl);
       const match = u.hostname + u.pathname;
-      await fetch(`http://localhost:9222/target?url=${encodeURIComponent(match)}`);
+      await fetch(`http://localhost:${port}/target?url=${encodeURIComponent(match)}`);
     } else if (tabId) {
-      await fetch(`http://localhost:9222/target?id=${tabId}`);
+      await fetch(`http://localhost:${port}/target?id=${tabId}`);
     }
   } catch {}
 }
 
-async function clearPin(): Promise<void> {
+async function clearPin(port: number): Promise<void> {
   try {
-    await fetch("http://localhost:9222/target?clear");
+    await fetch(`http://localhost:${port}/target?clear`);
   } catch {}
 }
 
@@ -86,6 +97,9 @@ export async function chat(
     conversations.set(tabId, conv);
   }
 
+  // Start port allocation early so it overlaps with any interrupt wait
+  const cdpPortPromise = getFreePort();
+
   // If already active, interrupt the current run first
   if (conv.active) {
     log("chat", "interrupting active conversation");
@@ -98,9 +112,10 @@ export async function chat(
   conv.url = tabUrl;
   conv.messages.push({ role: "user", content: userMessage });
 
-  log("chat", `tab=${tabId.slice(0, 12)} url=${tabUrl.slice(0, 50)} msg="${userMessage.slice(0, 60)}" session=${conv.sessionId?.slice(0, 8) || "new"}`);
+  const cdpPort = await cdpPortPromise;
+  log("chat", `tab=${tabId.slice(0, 12)} url=${tabUrl.slice(0, 50)} msg="${userMessage.slice(0, 60)}" session=${conv.sessionId?.slice(0, 8) || "new"} cdp=${cdpPort}`);
 
-  await pinTab(tabId, tabUrl);
+  await pinTab(cdpPort, tabId, tabUrl);
 
   const abortController = new AbortController();
   conv.abortController = abortController;
@@ -111,7 +126,11 @@ export async function chat(
     permissionMode: "bypassPermissions",
     allowDangerouslySkipPermissions: true,
     model: getModel(),
-    env: cleanEnv(),
+    env: {
+      ...cleanEnv(),
+      AGENT_BROWSER_CDP: String(cdpPort),
+      AGENT_BROWSER_SESSION: `companion-${cdpPort}`,
+    },
     cwd: HOME,
     abortController,
     includePartialMessages: true,
@@ -180,8 +199,8 @@ export async function chat(
   } finally {
     conv.active = false;
     conv.abortController = null;
-    await clearPin();
-    log("chat", "cleared pin, turn complete");
+    await clearPin(cdpPort);
+    log("chat", `cleared pin on port ${cdpPort}, turn complete`);
   }
 }
 

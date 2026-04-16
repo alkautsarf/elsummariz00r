@@ -376,8 +376,7 @@
         // Strip the AGENT_BROWSER_CDP prefix
         let cmd = parsed.command
           .replace(/^agent-browser close 2>\/dev\/null;\s*/, '')
-          .replace(/^export AGENT_BROWSER_CDP=9222\s*&&\s*/, '')
-          .replace(/^export AGENT_BROWSER_CDP=9222\s*;\s*/, '');
+          .replace(/^export AGENT_BROWSER_CDP=\d+\s*(?:&&|;)\s*/, '');
         return cmd;
       }
     } catch {}
