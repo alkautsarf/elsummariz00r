@@ -34,5 +34,5 @@ export function cleanEnv(): Record<string, string | undefined> {
 
 /** Get the configured model (ELS_MODEL env or default). */
 export function getModel(): string {
-  return process.env.ELS_MODEL || "claude-opus-4-6";
+  return process.env.ELS_MODEL || "claude-opus-4-7";
 }

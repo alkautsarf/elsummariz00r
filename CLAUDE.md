@@ -8,7 +8,7 @@ On-demand CLI tool — no persistent server. Each invocation runs `bun run src/i
 
 - **Web extraction**: CDP WebSocket to qutebrowser (port 2262), `document.body.innerText`
 - **YouTube extraction**: ANDROID innertube `/player` endpoint (server-side, no browser needed)
-- **Summarization**: Claude Agent SDK with Opus (`claude-opus-4-6`), one-shot, no tools
+- **Summarization**: Claude Agent SDK with Opus (`claude-opus-4-7`), one-shot, no tools
 - **Storage**: `~/.elsummariz00r/` for articles, summaries, and HTML pages
 - **HTML output**: Self-contained HTML files opened via `file://` URLs
 

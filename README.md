@@ -165,8 +165,8 @@ All config lives in `~/.elsummariz00r/.env`:
 # Required
 CLAUDE_CODE_OAUTH_TOKEN=your-token-here
 
-# Optional: change the model (default: claude-opus-4-6)
-ELS_MODEL=claude-opus-4-6
+# Optional: change the model (default: claude-opus-4-7)
+ELS_MODEL=claude-opus-4-7
 ```
 
 ## Storage
