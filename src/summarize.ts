@@ -125,6 +125,7 @@ ${content}`;
         allowDangerouslySkipPermissions: true,
         model: getModel(),
         thinking: { type: "adaptive" },
+        settingSources: [],
         env,
       },
     })) {
