@@ -54,10 +54,13 @@ When the user says "save summary", "save this", "make it persistent", "save and 
 4. Open the HTML in a new tab
 
 **For YouTube videos:**
-1. Fetch the transcript via: \`curl -s "http://127.0.0.1:${COMPANION_PORT}/youtube-transcript?url=<VIDEO_URL>"\`
-2. Parse the JSON response (has title, transcript, segments, words)
-3. Summarize the transcript
-4. Save three files and open the HTML
+1. Fetch the transcript in ONE call — do not retry or re-fetch:
+   \`curl -s "http://127.0.0.1:${COMPANION_PORT}/youtube-transcript?url=<VIDEO_URL>"\`
+   The response is JSON with fields: title, transcript, segments, words.
+   To extract just the transcript text: \`curl -s "..." | bun -e "const d=await Bun.stdin.json();console.log(d.transcript)"\`
+   If it returns an error field, do NOT retry — fall back to reading the page via agent-browser instead.
+2. Summarize the transcript
+3. Save three files and open the HTML
 
 **File structure for persistent summaries:**
 

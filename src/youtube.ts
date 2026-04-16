@@ -1,6 +1,10 @@
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36";
 
+// Pre-set consent cookie to bypass YouTube's consent gate (required for server-side fetches)
+const CONSENT_COOKIE =
+  "SOCS=CAISNQgDEitib3FfaWRlbnRpdHlfZnJvbnRlbmRfdWlzZXJ2ZXJfMjAyNDA0MjIuMDFfcDEGEANKBggEEgIIQQ";
+
 export interface CaptionResult {
   title: string;
   transcript: string;
@@ -84,15 +88,16 @@ function parseXml(body: string): string[] {
 export async function fetchCaptions(
   videoId: string,
 ): Promise<CaptionResult> {
-  // Step 1: Fetch watch page (gets API key, cookies, and inline player response)
+  // Step 1: Fetch watch page with consent cookie (gets API key, cookies, and inline player response)
   const pageResp = await fetch(
     `https://www.youtube.com/watch?v=${videoId}`,
-    { headers: { "User-Agent": UA, Accept: "text/html" } },
+    { headers: { "User-Agent": UA, Accept: "text/html", Cookie: CONSENT_COOKIE } },
   );
   const html = await pageResp.text();
-  const pageCookies = (pageResp.headers.getSetCookie?.() ?? [])
+  const setCookies = (pageResp.headers.getSetCookie?.() ?? [])
     .map((c: string) => c.split(";")[0])
     .join("; ");
+  const pageCookies = CONSENT_COOKIE + (setCookies ? "; " + setCookies : "");
 
   const titleMatch = html.match(/<title>([^<]+)<\/title>/);
   let title =
