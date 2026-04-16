@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.3] - 2026-04-16
+
+### Changed
+
+- Upgraded `@anthropic-ai/claude-agent-sdk` from 0.2.84 to 0.2.111 (matches Claude Code v2.1.111)
+
 ## [0.2.2] - 2026-04-16
 
 ### Changed
@@ -62,6 +68,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Dark/light mode toggle
 - Dedup and caching
 
+[0.2.3]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.2.3
 [0.2.2]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.2.2
 [0.2.1]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.2.1
 [0.2.0]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.2.0
