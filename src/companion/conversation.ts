@@ -247,7 +247,7 @@ function handleMessage(
       const toolBlocks = message.message.content.filter(
         (b: any) => b.type === "tool_use",
       );
-      for (const tool of toolBlocks) {
+      for (const tool of toolBlocks as any[]) {
         const input =
           typeof tool.input === "string"
             ? tool.input

@@ -32,7 +32,7 @@ export function cleanEnv(): Record<string, string | undefined> {
   return env;
 }
 
-/** Get the configured model (ELS_MODEL env or default). */
+/** Get the configured model (ELS_MODEL, then S0NDER_MODEL, else default). */
 export function getModel(): string {
-  return process.env.ELS_MODEL || "claude-opus-4-7";
+  return process.env.ELS_MODEL || process.env.S0NDER_MODEL || "claude-opus-4-8";
 }

@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.0] - 2026-05-29
+
+### Changed
+
+- Upgraded `@anthropic-ai/claude-agent-sdk` from 0.2.111 to 0.3.156
+- Default summarization model bumped from `claude-opus-4-7` to `claude-opus-4-8`
+
+### Added
+
+- Dynamic model resolver — `S0NDER_MODEL` env now acts as a fallback when `ELS_MODEL` is unset (precedence: `ELS_MODEL` then `S0NDER_MODEL` then `claude-opus-4-8`)
+
 ## [0.2.4] - 2026-04-16
 
 ### Fixed
@@ -74,6 +85,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Dark/light mode toggle
 - Dedup and caching
 
+[0.3.0]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.3.0
 [0.2.4]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.2.4
 [0.2.3]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.2.3
 [0.2.2]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.2.2
