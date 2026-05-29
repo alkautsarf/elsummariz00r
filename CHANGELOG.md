@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.1] - 2026-05-29
+
+### Fixed
+
+- Companion resume self-heals — when resuming a persisted session fails before anything streams (e.g. a stale in-memory session left over from an Agent SDK upgrade), the conversation now retries once as a fresh session instead of dying with "Claude Code process exited with code 1" (fixes v0.3.0 stale-session regression)
+
 ## [0.3.0] - 2026-05-29
 
 ### Changed
@@ -85,6 +91,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Dark/light mode toggle
 - Dedup and caching
 
+[0.3.1]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.3.1
 [0.3.0]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.3.0
 [0.2.4]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.2.4
 [0.2.3]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.2.3

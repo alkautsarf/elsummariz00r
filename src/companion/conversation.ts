@@ -149,16 +149,24 @@ export async function chat(
     },
   };
 
+  // Tools/system-prompt applied to any fresh (non-resume) session. Also reused by the
+  // resume-fallback below to convert a failed resume into a fresh session.
+  const FRESH_TOOLS = ["Bash", "Read", "Write", "Grep", "Glob"];
+  const applyFreshSession = (opts: any) => {
+    delete opts.resume;
+    opts.systemPrompt = SYSTEM_PROMPT;
+    opts.tools = FRESH_TOOLS;
+    opts.allowedTools = FRESH_TOOLS;
+    opts.persistSession = true;
+  };
+
   if (isResume) {
     // Resume the existing session — Claude has full conversation history
     options.resume = conv.sessionId;
     log("chat", `resuming session ${conv.sessionId!.slice(0, 8)}`);
   } else {
     // New session — set system prompt and tools
-    options.systemPrompt = SYSTEM_PROMPT;
-    options.tools = ["Bash", "Read", "Write", "Grep", "Glob"];
-    options.allowedTools = ["Bash", "Read", "Write", "Grep", "Glob"];
-    options.persistSession = true;
+    applyFreshSession(options);
   }
 
   // Always include current page URL so Claude knows what tab it's on
@@ -170,19 +178,41 @@ export async function chat(
     let assistantText = "";
     const streaming = { text: "" };
 
-    for await (const message of query({ prompt: promptWithContext, options })) {
-      // Capture session ID from init message
-      if (message.type === "system" && (message as any).subtype === "init") {
-        const sid = (message as any).session_id;
-        if (sid) {
-          conv.sessionId = sid;
-          log("chat", `session ID: ${sid.slice(0, 8)}`);
+    const runStream = async (opts: any): Promise<void> => {
+      for await (const message of query({ prompt: promptWithContext, options: opts })) {
+        // Capture session ID from init message
+        if (message.type === "system" && (message as any).subtype === "init") {
+          const sid = (message as any).session_id;
+          if (sid) {
+            conv.sessionId = sid;
+            log("chat", `session ID: ${sid.slice(0, 8)}`);
+          }
         }
-      }
 
-      handleMessage(message, onStream, streaming, (text) => {
-        assistantText = text;
-      });
+        handleMessage(message, onStream, streaming, (text) => {
+          assistantText = text;
+        });
+      }
+    };
+
+    try {
+      await runStream(options);
+    } catch (err: any) {
+      // A resume can fail if the persisted session is stale, expired, or invalidated
+      // (e.g. the companion server bridged an Agent SDK upgrade — the v0.3.0 regression).
+      // If we were resuming and nothing has streamed yet, self-heal: drop the bad session
+      // and retry once as a fresh session instead of dying with "exited code 1".
+      const canRetryFresh =
+        isResume &&
+        err.name !== "AbortError" &&
+        !abortController.signal.aborted &&
+        assistantText === "" &&
+        streaming.text === "";
+      if (!canRetryFresh) throw err;
+      log("chat", `resume failed (${err.message}); retrying with a fresh session`);
+      conv.sessionId = null;
+      applyFreshSession(options);
+      await runStream(options);
     }
 
     log("chat", `done — ${assistantText.length} chars response`);
