@@ -4,11 +4,11 @@ Personal web/YouTube summarization tool integrated with qutebrowser and CLI.
 
 ## Architecture
 
-On-demand CLI tool — no persistent server. Each invocation runs `bun run src/index.ts`, does the work, and exits.
+Two modes. The **CLI** is on-demand: each invocation runs `bun run src/index.ts`, does the work, and exits. The **companion** is a persistent server (`src/companion/`, port 7700), autostarted by `~/.qutebrowser/config.py` and long-lived, so it freezes its environment at spawn and must be restarted to pick up env changes.
 
 - **Web extraction**: CDP WebSocket to qutebrowser (port 2262), `document.body.innerText`
 - **YouTube extraction**: ANDROID innertube `/player` endpoint (server-side, no browser needed)
-- **Summarization**: Claude Agent SDK with Opus (`claude-opus-4-8`), one-shot, no tools
+- **Summarization**: Claude Agent SDK, one-shot, no tools. Model comes from `getModel()` in `src/env.ts` (`ELS_MODEL`, else `S0NDER_MODEL`, else a hardcoded default), never a literal pinned here.
 - **Storage**: `~/.elsummariz00r/` for articles, summaries, and HTML pages
 - **HTML output**: Self-contained HTML files opened via `file://` URLs
 
@@ -34,6 +34,8 @@ All entry points call `bun run src/index.ts` directly. Shell scripts set `CLAUDE
 - `src/storage.ts` — File I/O for ~/.elsummariz00r/
 - `src/html.ts` — HTML summary page template (Tokyo Night theme, dark/light toggle)
 - `src/tmux.ts` — Opens Claude Code discussion sessions in tmux
+- `src/env.ts`, loads `~/.elsummariz00r/.env` and resolves the model via `getModel()`. `loadEnv()` is awaited in entrypoints AFTER imports are evaluated, so never read env at module top level in a file this can reach.
+- `src/companion/`, the persistent browser companion: `index.ts` (entrypoint), `server.ts` (port 7700), `conversation.ts` (SDK session, resume, per-request options), `tools.ts` (`buildSystemPrompt()`, built per session so it sees post-`loadEnv` values).
 
 ## Dev
 

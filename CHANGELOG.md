@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.0] - 2026-08-05
+
+### Added
+
+- Companion states its own model from configuration instead of guessing. Asked "what model are you", it previously answered from training data, which is always stale for a model's own generation, and would confidently assert that a newer generation did not exist. The system prompt now carries the configured model id and scopes the "do not introspect" instruction to identity questions only.
+
+### Fixed
+
+- Companion system prompt is now built per session rather than at module load. `getModel()` used to run during import, which ES module evaluation order guarantees happens before `await loadEnv()` in the companion entrypoint, so a model set in `~/.elsummariz00r/.env` was never visible to the prompt while `conversation.ts` sent the correct value to the SDK. The prompt and the model actually in use could disagree.
+- `loadEnv()` strips surrounding quotes and whitespace from `.env` values. Quoting is the standard `.env` convention, and without this `ELS_MODEL="claude-opus-5"` yielded a value with the quote characters still attached, which was then handed to the Agent SDK as an invalid model id.
+- Companion logs when the SDK resolves a different model than the one requested, so an alias mapping is visible rather than silent.
+
+### Security
+
+- The model id is sanitized against a character whitelist before being interpolated into the companion system prompt. The companion runs with `permissionMode: "bypassPermissions"` plus Bash and Write, and the value originates in a file on disk, so a backtick or newline in `ELS_MODEL` could previously close the code span and inject arbitrary instructions above the guideline section that forbids curl and writing to Claude memory directories.
+
 ## [0.3.1] - 2026-05-29
 
 ### Fixed
@@ -91,6 +107,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Dark/light mode toggle
 - Dedup and caching
 
+[0.4.0]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.4.0
 [0.3.1]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.3.1
 [0.3.0]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.3.0
 [0.2.4]: https://github.com/alkautsarf/elsummariz00r/releases/tag/v0.2.4

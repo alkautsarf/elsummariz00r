@@ -12,8 +12,15 @@ export async function loadEnv(): Promise<void> {
         if (!trimmed || trimmed.startsWith("#")) continue;
         const eq = trimmed.indexOf("=");
         if (eq > 0) {
-          const key = trimmed.slice(0, eq);
-          const value = trimmed.slice(eq + 1);
+          const key = trimmed.slice(0, eq).trim();
+          // Strip one layer of matching surrounding quotes. Quoting values is the
+          // near-universal .env convention, and without this a line like
+          // ELS_MODEL="claude-opus-5" yields a value with the quote characters
+          // still in it, which then gets handed to the SDK as a model id.
+          const value = trimmed
+            .slice(eq + 1)
+            .trim()
+            .replace(/^(["'])(.*)\1$/, "$2");
           if (!process.env[key]) {
             process.env[key] = value;
           }

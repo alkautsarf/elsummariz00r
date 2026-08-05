@@ -1,5 +1,5 @@
 import { query, type SDKMessage } from "@anthropic-ai/claude-agent-sdk";
-import { SYSTEM_PROMPT, COMPANION_CDP_BASE, COMPANION_CDP_PROXY } from "./tools";
+import { buildSystemPrompt, COMPANION_CDP_BASE, COMPANION_CDP_PROXY } from "./tools";
 import { HOME } from "../storage";
 import { getModel, cleanEnv } from "../env";
 
@@ -154,7 +154,9 @@ export async function chat(
   const FRESH_TOOLS = ["Bash", "Read", "Write", "Grep", "Glob"];
   const applyFreshSession = (opts: any) => {
     delete opts.resume;
-    opts.systemPrompt = SYSTEM_PROMPT;
+    // Built here, not at import: the model id it embeds is only correct once
+    // loadEnv() has run, and that happens after this module is imported.
+    opts.systemPrompt = buildSystemPrompt();
     opts.tools = FRESH_TOOLS;
     opts.allowedTools = FRESH_TOOLS;
     opts.persistSession = true;
@@ -186,6 +188,15 @@ export async function chat(
           if (sid) {
             conv.sessionId = sid;
             log("chat", `session ID: ${sid.slice(0, 8)}`);
+          }
+          // The SDK reports the model it actually resolved. This cannot feed the
+          // current session's system prompt (that has to exist before the query
+          // starts), but logging it makes a divergence between what we asked for
+          // and what we got visible instead of silent, e.g. if the configured id
+          // is an alias the SDK maps elsewhere.
+          const served = (message as any).model;
+          if (served && served !== options.model) {
+            log("chat", `model: requested ${options.model}, SDK resolved ${served}`);
           }
         }
 

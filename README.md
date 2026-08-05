@@ -165,9 +165,11 @@ All config lives in `~/.elsummariz00r/.env`:
 # Required
 CLAUDE_CODE_OAUTH_TOKEN=your-token-here
 
-# Optional: change the model (default: claude-opus-4-8)
-ELS_MODEL=claude-opus-4-8
+# Optional: change the model
+ELS_MODEL=claude-opus-5[1m]
 ```
+
+Model resolution order is `ELS_MODEL`, then `S0NDER_MODEL` (shared across the s0nderlabs tools), then a hardcoded default of `claude-opus-4-8`. Values may be quoted or unquoted; surrounding quotes are stripped. The companion reports whichever id it was configured with when asked, rather than guessing from training data, which for a model's own generation is always stale.
 
 ## Storage
 

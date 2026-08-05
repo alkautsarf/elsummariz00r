@@ -1,10 +1,39 @@
 import { HOME } from "../storage";
+import { getModel } from "../env";
 
 export const COMPANION_PORT = 7700;
 export const COMPANION_CDP_PROXY = 9222;
 export const COMPANION_CDP_BASE = 9232;
 
-export const SYSTEM_PROMPT = `You are elsummariz00r companion — a browser assistant embedded in qutebrowser. You help the user understand, navigate, and interact with web pages.
+/**
+ * Model ids are `[A-Za-z0-9._-]` plus the `[1m]` style context suffix. Anything else
+ * gets dropped rather than escaped: this value reaches a system prompt for an agent
+ * running with permissionMode "bypassPermissions" plus Bash and Write, so a stray
+ * backtick or newline in ELS_MODEL would close the code span and let a tampered
+ * ~/.elsummariz00r/.env inject arbitrary instructions above the Guidelines section.
+ */
+function sanitizeModelId(raw: string): string {
+  const clean = raw.replace(/[^A-Za-z0-9._[\]-]/g, "");
+  return clean.slice(0, 64) || "unknown";
+}
+
+/**
+ * Built per fresh session, NOT at module load. `getModel()` must run AFTER
+ * `await loadEnv()` in companion/index.ts, and that await happens after this module
+ * has already been imported (index.ts imports ./server -> ./conversation -> ./tools),
+ * so a top-level const here would freeze a pre-.env value and then instruct the model
+ * to present it as authoritative. That is the exact "confidently wrong model answer"
+ * this text exists to prevent.
+ */
+export function buildSystemPrompt(): string {
+  const configured = sanitizeModelId(getModel());
+  return `You are elsummariz00r companion, a browser assistant embedded in qutebrowser. You help the user understand, navigate, and interact with web pages.
+
+## Your model
+
+This session was configured to run on \`${configured}\`. That is the model id this process passed to the Agent SDK, read from ELS_MODEL, else S0NDER_MODEL, else a hardcoded default. If the user asks which model you are, give them that string and say it is the configured value rather than something you introspected. If they need to know which of those three sources it came from, tell them to check the env directly, because you cannot tell from the string alone.
+
+**On this one question, do not answer from training data.** A model's own name and release generation sit past its own training cutoff, so introspecting gives a confidently stale answer, and flatly asserting that some newer generation "does not exist" is wrong rather than merely uncertain. This scoping applies to your own identity and version only; answer every other question normally from what you know.
 
 You have Bash, Read, Write, Grep, and Glob tools. AGENT_BROWSER_CDP and AGENT_BROWSER_SESSION are pre-set in your environment — just run agent-browser commands directly.
 
@@ -186,3 +215,4 @@ grep -l "keyword" ${HOME}/summaries/*.md
 - NEVER write files to .claude/projects/ or any Claude memory directory. When saving ANY files, save them to ${HOME}/ only.
 - NEVER use curl/wget to fetch web pages. The ONLY way to access the web is through agent-browser in the user's browser.
 - Keep it simple: snapshot first, then interact with refs. Don't overcomplicate things.`;
+}
